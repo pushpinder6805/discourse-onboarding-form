@@ -13,7 +13,7 @@ export default class OnboardingRoute extends Route {
 
   afterModel(model) {
     if (model.completed) {
-      this.router.transitionTo("/");
+      window.location.href = "/";
     }
   }
 }

@@ -3,7 +3,7 @@ import { withPluginApi } from "discourse/lib/plugin-api";
 export default {
   name: "onboarding-redirect",
   initialize(container) {
-    withPluginApi((api) => {
+    withPluginApi("1.0.0", (api) => {
       const siteSettings = container.lookup("service:site-settings");
       if (!siteSettings.onboarding_enabled) {
         return;

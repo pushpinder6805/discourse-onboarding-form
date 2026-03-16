@@ -25,17 +25,15 @@ after_initialize do
     get "/questionnaire/status" => "onboarding#status"
 
     scope "/admin", constraints: StaffConstraint.new do
-      get "plugins/onboarding" => "admin/onboarding/onboarding#index"
-
-      get "plugins/onboarding/questionnaires" => "admin/onboarding/onboarding#index"
-      post "plugins/onboarding/questionnaires" => "admin/onboarding/onboarding#create_questionnaire"
-      put "plugins/onboarding/questionnaires/:id" => "admin/onboarding/onboarding#update_questionnaire"
-      delete "plugins/onboarding/questionnaires/:id" => "admin/onboarding/onboarding#destroy_questionnaire"
-
-      get "plugins/onboarding/submissions" => "admin/onboarding/onboarding#submissions"
-      get "plugins/onboarding/submissions/export" => "admin/onboarding/onboarding#export"
-      get "plugins/onboarding/submissions/:id" => "admin/onboarding/onboarding#show"
-      delete "plugins/onboarding/submissions/:id" => "admin/onboarding/onboarding#destroy"
+      get "plugins/onboarding" => "admin/onboarding#index"
+      get "plugins/onboarding/questionnaires" => "admin/onboarding#index"
+      post "plugins/onboarding/questionnaires" => "admin/onboarding#create_questionnaire"
+      put "plugins/onboarding/questionnaires/:id" => "admin/onboarding#update_questionnaire"
+      delete "plugins/onboarding/questionnaires/:id" => "admin/onboarding#destroy_questionnaire"
+      get "plugins/onboarding/submissions" => "admin/onboarding#submissions"
+      get "plugins/onboarding/submissions/export" => "admin/onboarding#export"
+      get "plugins/onboarding/submissions/:id" => "admin/onboarding#show"
+      delete "plugins/onboarding/submissions/:id" => "admin/onboarding#destroy"
     end
   end
 
