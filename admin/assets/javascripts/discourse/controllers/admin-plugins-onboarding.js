@@ -1,6 +1,6 @@
+import { tracked } from "@glimmer/tracking";
 import Controller from "@ember/controller";
 import { action } from "@ember/object";
-import { tracked } from "@glimmer/tracking";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 
@@ -24,7 +24,9 @@ export default class AdminPluginsOnboardingController extends Controller {
 
   @action
   async loadSubmissions(resetPage = true) {
-    if (resetPage) this.page = 0;
+    if (resetPage) {
+      this.page = 0;
+    }
     this.isLoading = true;
 
     try {
@@ -44,7 +46,9 @@ export default class AdminPluginsOnboardingController extends Controller {
 
   @action
   async loadMore() {
-    if (!this.hasMore) return;
+    if (!this.hasMore) {
+      return;
+    }
     this.page++;
     await this.loadSubmissions(false);
   }
@@ -76,8 +80,6 @@ export default class AdminPluginsOnboardingController extends Controller {
 
   @action
   async deleteSubmission(id) {
-    if (!window.confirm("Are you sure you want to delete this submission?")) return;
-
     try {
       await ajax(`/admin/plugins/onboarding/submissions/${id}`, {
         type: "DELETE",

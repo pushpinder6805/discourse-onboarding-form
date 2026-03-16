@@ -1,6 +1,6 @@
+import { tracked } from "@glimmer/tracking";
 import Controller from "@ember/controller";
 import { action } from "@ember/object";
-import { tracked } from "@glimmer/tracking";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 
@@ -98,9 +98,15 @@ export default class OnboardingController extends Controller {
   }
 
   get canProceed() {
-    if (this.currentStep === 1) return this.isStep1Valid;
-    if (this.currentStep === 2) return this.isStep2Valid;
-    if (this.currentStep === 3) return this.isStep3Valid;
+    if (this.currentStep === 1) {
+      return this.isStep1Valid;
+    }
+    if (this.currentStep === 2) {
+      return this.isStep2Valid;
+    }
+    if (this.currentStep === 3) {
+      return this.isStep3Valid;
+    }
     return false;
   }
 
@@ -191,7 +197,9 @@ export default class OnboardingController extends Controller {
 
   @action
   async nextStep() {
-    if (!this.canProceed) return;
+    if (!this.canProceed) {
+      return;
+    }
     const result = await this.saveStep(false);
     if (result) {
       this.currentStep = Math.min(this.currentStep + 1, this.totalSteps);
@@ -205,7 +213,9 @@ export default class OnboardingController extends Controller {
 
   @action
   async submitForm() {
-    if (!this.isStep3Valid) return;
+    if (!this.isStep3Valid) {
+      return;
+    }
     await this.saveStep(true);
   }
 }

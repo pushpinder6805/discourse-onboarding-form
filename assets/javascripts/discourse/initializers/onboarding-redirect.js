@@ -1,17 +1,23 @@
-import { withPluginApi } from "discourse/lib/plugin-api";
 import { ajax } from "discourse/lib/ajax";
+import { withPluginApi } from "discourse/lib/plugin-api";
 
 export default {
   name: "onboarding-redirect",
   initialize(container) {
-    withPluginApi("1.0.0", (api) => {
+    withPluginApi((api) => {
       const siteSettings = container.lookup("service:site-settings");
-      if (!siteSettings.onboarding_enabled) return;
+      if (!siteSettings.onboarding_enabled) {
+        return;
+      }
 
       api.onAppEvent("page:changed", async (data) => {
         const currentUser = api.getCurrentUser();
-        if (!currentUser) return;
-        if (data.url === "/onboarding") return;
+        if (!currentUser) {
+          return;
+        }
+        if (data.url === "/onboarding") {
+          return;
+        }
 
         if (currentUser.onboarding_completed === false) {
           try {
