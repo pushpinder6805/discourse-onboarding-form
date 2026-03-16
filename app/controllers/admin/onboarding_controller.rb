@@ -2,7 +2,7 @@
 
 module Admin
   module Onboarding
-    class OnboardingController < Admin::AdminController
+    class OnboardingController < ::Admin::AdminController
       requires_plugin "discourse-onboarding-form"
 
       def index

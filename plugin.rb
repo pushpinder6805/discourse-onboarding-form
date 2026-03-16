@@ -21,12 +21,12 @@ after_initialize do
     post "/onboarding/submit" => "onboarding#submit"
     get "/onboarding/status" => "onboarding#status"
 
-    namespace :admin, constraints: StaffConstraint.new do
-      get "plugins/onboarding" => "onboarding/onboarding#index"
-      get "plugins/onboarding/submissions" => "onboarding/onboarding#submissions"
-      get "plugins/onboarding/submissions/:id" => "onboarding/onboarding#show"
-      delete "plugins/onboarding/submissions/:id" => "onboarding/onboarding#destroy"
-      get "plugins/onboarding/export" => "onboarding/onboarding#export"
+    scope "/admin", constraints: StaffConstraint.new do
+      get "plugins/onboarding" => "admin/onboarding/onboarding#index"
+      get "plugins/onboarding/submissions" => "admin/onboarding/onboarding#submissions"
+      get "plugins/onboarding/export" => "admin/onboarding/onboarding#export"
+      get "plugins/onboarding/submissions/:id" => "admin/onboarding/onboarding#show"
+      delete "plugins/onboarding/submissions/:id" => "admin/onboarding/onboarding#destroy"
     end
   end
 
