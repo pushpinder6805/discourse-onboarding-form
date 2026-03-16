@@ -3,7 +3,10 @@ en:
     admin:
       site_settings:
         categories:
-          TODO_plugin_name: "Plugin Name"
+          onboarding: "Onboarding"
   js:
-    discourse_plugin_name:
-      placeholder: placeholder
+    onboarding:
+      title: "Complete Your Profile"
+    admin_plugins:
+      onboarding:
+        title: "Onboarding Submissions"

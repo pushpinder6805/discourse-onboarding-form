@@ -1,1 +1,6 @@
 en:
+  onboarding:
+    errors:
+      incomplete: "Please complete all required fields before submitting."
+      already_completed: "You have already completed the onboarding process."
+      not_found: "Submission not found."

@@ -1,0 +1,246 @@
+<div class="admin-onboarding-panel">
+  <div class="admin-onboarding-header">
+    <div class="admin-onboarding-header-left">
+      <h1 class="admin-onboarding-title">Onboarding Submissions</h1>
+      <span class="admin-onboarding-count">{{this.total}} total</span>
+    </div>
+    <div class="admin-onboarding-header-actions">
+      <button
+        type="button"
+        class="btn btn-default"
+        {{on "click" this.exportCSV}}
+      >
+        Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="admin-onboarding-toolbar">
+    <div class="admin-search-row">
+      <input
+        type="text"
+        class="admin-search-input"
+        value={{this.search}}
+        placeholder="Search by username or email..."
+        {{on "input" this.updateSearch}}
+        {{on "keydown" (fn this.performSearch)}}
+      />
+      <button
+        type="button"
+        class="btn btn-primary"
+        {{on "click" this.performSearch}}
+      >
+        Search
+      </button>
+    </div>
+  </div>
+
+  {{#if this.isLoading}}
+    <div class="admin-onboarding-loading">
+      <div class="loading-spinner"></div>
+      <p>Loading submissions...</p>
+    </div>
+  {{else if (eq this.submissions.length 0)}}
+    <div class="admin-onboarding-empty">
+      <p>No submissions found.</p>
+    </div>
+  {{else}}
+    <div class="admin-submissions-table-wrap">
+      <table class="admin-submissions-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Organization</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each this.submissions as |sub|}}
+            <tr class="submission-row {{unless sub.completed "incomplete"}}">
+              <td class="user-cell">
+                {{#if sub.avatar_template}}
+                  <img
+                    src={{replace-emoji sub.avatar_template}}
+                    class="avatar avatar-small"
+                    alt={{sub.username}}
+                  />
+                {{/if}}
+                <span class="username">{{sub.username}}</span>
+              </td>
+              <td class="email-cell">{{sub.email}}</td>
+              <td>{{sub.data.role}}</td>
+              <td>{{sub.data.organization}}</td>
+              <td>
+                <span class="status-badge {{if sub.completed "completed" "pending"}}">
+                  {{if sub.completed "Completed" "In Progress"}}
+                </span>
+              </td>
+              <td class="date-cell">{{format-date sub.created_at}}</td>
+              <td class="actions-cell">
+                <button
+                  type="button"
+                  class="btn btn-small btn-default"
+                  {{on "click" (fn this.viewSubmission sub.id)}}
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-small btn-danger"
+                  {{on "click" (fn this.deleteSubmission sub.id)}}
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+
+    {{#if this.hasMore}}
+      <div class="admin-load-more">
+        <button
+          type="button"
+          class="btn btn-default"
+          disabled={{this.isLoading}}
+          {{on "click" this.loadMore}}
+        >
+          Load More
+        </button>
+      </div>
+    {{/if}}
+  {{/if}}
+
+  {{#if this.selectedSubmission}}
+    <div class="submission-detail-overlay">
+      <div class="submission-detail-modal">
+        <div class="submission-detail-header">
+          <h2>Submission Detail</h2>
+          <button
+            type="button"
+            class="close-btn"
+            {{on "click" this.closeDetail}}
+          >×</button>
+        </div>
+        <div class="submission-detail-body">
+          <div class="detail-user-info">
+            <strong>Username:</strong> {{this.selectedSubmission.username}}<br/>
+            <strong>Email:</strong> {{this.selectedSubmission.email}}<br/>
+            <strong>Status:</strong>
+            <span class="status-badge {{if this.selectedSubmission.completed "completed" "pending"}}">
+              {{if this.selectedSubmission.completed "Completed" "In Progress"}}
+            </span>
+          </div>
+
+          <div class="detail-section">
+            <h3>About</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Role</span>
+                <span class="detail-value">{{this.selectedSubmission.data.role}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Groups Served</span>
+                <span class="detail-value">{{join this.selectedSubmission.data.groups_served ", "}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">States Worked</span>
+                <span class="detail-value">{{join this.selectedSubmission.data.states_worked ", "}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3>Personal</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">First Name</span>
+                <span class="detail-value">{{this.selectedSubmission.data.first_name}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Last Name</span>
+                <span class="detail-value">{{this.selectedSubmission.data.last_name}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Pronouns</span>
+                <span class="detail-value">{{this.selectedSubmission.data.pronouns}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3>Contact</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Phone</span>
+                <span class="detail-value">{{this.selectedSubmission.data.phone}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Alt Phone</span>
+                <span class="detail-value">{{this.selectedSubmission.data.alt_phone}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3>Organization</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Organization</span>
+                <span class="detail-value">{{this.selectedSubmission.data.organization}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Type</span>
+                <span class="detail-value">{{this.selectedSubmission.data.organization_type}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3>Location</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Country</span>
+                <span class="detail-value">{{this.selectedSubmission.data.country}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">State</span>
+                <span class="detail-value">{{this.selectedSubmission.data.state}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">City</span>
+                <span class="detail-value">{{this.selectedSubmission.data.city}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Zip</span>
+                <span class="detail-value">{{this.selectedSubmission.data.zip}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="submission-detail-footer">
+          <button
+            type="button"
+            class="btn btn-danger"
+            {{on "click" (fn this.deleteSubmission this.selectedSubmission.id)}}
+          >
+            Delete Submission
+          </button>
+          <button
+            type="button"
+            class="btn btn-default"
+            {{on "click" this.closeDetail}}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  {{/if}}
+</div>
