@@ -1,4 +1,3 @@
-import { ajax } from "discourse/lib/ajax";
 import { withPluginApi } from "discourse/lib/plugin-api";
 
 export default {
@@ -10,23 +9,16 @@ export default {
         return;
       }
 
-      api.onAppEvent("page:changed", async (data) => {
+      api.onAppEvent("page:changed", (data) => {
         const currentUser = api.getCurrentUser();
         if (!currentUser) {
           return;
         }
-        if (data.url === "/onboarding") {
+        if (data.url === "/questionnaire") {
           return;
         }
-
-        if (currentUser.onboarding_completed === false) {
-          try {
-            const result = await ajax("/onboarding/status");
-            if (result.required && !result.completed) {
-              window.location.href = "/onboarding";
-            }
-          } catch {
-          }
+        if (currentUser.questionnaire_required) {
+          window.location.href = "/questionnaire";
         }
       });
 
@@ -34,7 +26,7 @@ export default {
       const currentUser = api.getCurrentUser();
       if (currentUser) {
         messageBus.subscribe(
-          `/onboarding/redirect/${currentUser.id}`,
+          `/questionnaire/redirect/${currentUser.id}`,
           (data) => {
             if (data.redirect) {
               window.location.href = data.redirect;

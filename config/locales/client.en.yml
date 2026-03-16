@@ -5,8 +5,8 @@ en:
         categories:
           onboarding: "Onboarding"
   js:
-    onboarding:
-      title: "Complete Your Profile"
+    questionnaire:
+      title: "Questionnaire"
     admin_plugins:
       onboarding:
-        title: "Onboarding Submissions"
+        title: "Questionnaire Builder"

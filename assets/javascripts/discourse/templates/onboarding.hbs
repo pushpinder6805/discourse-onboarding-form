@@ -1,343 +1,137 @@
-<div class="onboarding-wizard-container">
-  <div class="onboarding-wizard-card">
+<div class="questionnaire-page-container">
+  <div class="questionnaire-card">
 
-    <div class="onboarding-header">
-      <div class="onboarding-logo">
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-          <circle cx="20" cy="20" r="20" fill="#1a56db"/>
-          <path d="M12 20l6 6 10-12" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+    {{#if this.hasQuestionnaire}}
+      <div class="questionnaire-header">
+        <div class="questionnaire-logo">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="20" fill="#2563eb"/>
+            <path d="M13 20l5 5 9-10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1 class="questionnaire-title">{{this.questionnaire.name}}</h1>
+        {{#if this.questionnaire.description}}
+          <p class="questionnaire-description">{{this.questionnaire.description}}</p>
+        {{/if}}
       </div>
-      <h1 class="onboarding-title">Complete Your Profile</h1>
-      <p class="onboarding-subtitle">Step {{this.currentStep}} of {{this.totalSteps}}</p>
-    </div>
 
-    <div class="onboarding-progress">
-      {{#each this.stepDots as |dot|}}
-        <div class="step-dot {{if dot.active "active"}} {{if dot.completed "completed"}}">
-          {{#if dot.completed}}
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M2 5l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          {{else}}
-            {{dot.index}}
-          {{/if}}
-        </div>
-        {{#unless (eq dot.index this.totalSteps)}}
-          <div class="step-connector {{if dot.completed "completed"}}"></div>
-        {{/unless}}
-      {{/each}}
-    </div>
+      <div class="questionnaire-fields">
+        {{#each this.fields as |field|}}
+          <div class="qfield qfield-{{field.type}} {{if field.required "required"}}">
 
-    {{#if (eq this.currentStep 1)}}
-      <div class="onboarding-step step-1">
-        <h2 class="step-title">Usage Agreement</h2>
-        <p class="step-description">Please review and accept the following agreements to continue.</p>
+            {{#if (or (eq field.type "text") (eq field.type "phone") (eq field.type "number"))}}
+              <label class="qfield-label">
+                {{field.label}}
+                {{#if field.required}}<span class="required-star">*</span>{{/if}}
+              </label>
+              <input
+                type={{if (eq field.type "phone") "tel" (if (eq field.type "number") "number" "text")}}
+                class="qfield-input"
+                value={{get this.fieldValues field.id}}
+                placeholder={{field.placeholder}}
+                {{on "input" (fn this.updateField field.id)}}
+              />
+            {{/if}}
 
-        <div class="agreement-boxes">
-          <div class="agreement-box">
-            <h3 class="agreement-box-title">Participation Agreement</h3>
-            <div class="agreement-scroll-content">
-              <p>By participating in this platform, you agree to engage respectfully and professionally with all members of the community. You acknowledge that this platform is designed to facilitate meaningful discussion and collaboration among professionals in the field of conflict resolution and mediation.</p>
-              <p>You agree to share knowledge, resources, and experiences in good faith, and to treat all participants with dignity and respect regardless of their background, experience level, or perspective.</p>
-              <p>You understand that your contributions to discussions, forums, and shared resources become part of the community knowledge base and may be viewed by other verified members. You agree not to share proprietary, confidential, or privileged information without appropriate authorization.</p>
-              <p>Violation of community standards may result in suspension or removal from the platform at the discretion of administrators.</p>
-            </div>
-          </div>
+            {{#if (eq field.type "textarea")}}
+              <label class="qfield-label">
+                {{field.label}}
+                {{#if field.required}}<span class="required-star">*</span>{{/if}}
+              </label>
+              <textarea
+                class="qfield-textarea"
+                placeholder={{field.placeholder}}
+                {{on "input" (fn this.updateField field.id)}}
+              >{{get this.fieldValues field.id}}</textarea>
+            {{/if}}
 
-          <div class="agreement-box">
-            <h3 class="agreement-box-title">Privacy</h3>
-            <div class="agreement-scroll-content">
-              <p>We take your privacy seriously. The personal information you provide during onboarding and platform use is collected solely for the purpose of creating your professional profile, facilitating community connections, and improving platform services.</p>
-              <p>Your contact information, including phone number and email, will not be shared with third parties without your explicit consent, except as required by law. Your professional profile information (role, organization, location) may be visible to other verified community members.</p>
-              <p>We use industry-standard security measures to protect your data. You may request access to, correction of, or deletion of your personal data at any time by contacting platform administrators.</p>
-              <p>By proceeding, you consent to the collection and use of your information as described in this privacy policy.</p>
-            </div>
-          </div>
+            {{#if (eq field.type "terms_and_conditions")}}
+              <div class="qfield-terms-block">
+                <label class="qfield-label">
+                  {{field.label}}
+                  {{#if field.required}}<span class="required-star">*</span>{{/if}}
+                </label>
+                <div
+                  class="qfield-terms-scroll"
+                  {{on "scroll" (fn this.markScrolled field.id)}}
+                >
+                  <p>{{field.content}}</p>
+                </div>
+                <label class="qfield-acceptance-row">
+                  <input
+                    type="checkbox"
+                    class="qfield-checkbox"
+                    checked={{get this.fieldValues field.id}}
+                    {{on "change" (fn this.updateField field.id)}}
+                  />
+                  <span class="qfield-acceptance-text">
+                    I have read and agree to these terms
+                  </span>
+                </label>
+              </div>
+            {{/if}}
 
-          <div class="agreement-box">
-            <h3 class="agreement-box-title">Consumer Information Disclosure</h3>
-            <div class="agreement-scroll-content">
-              <p>This platform is operated as a professional community resource for practitioners in mediation, conflict resolution, and related fields. Membership is subject to verification and approval by platform administrators.</p>
-              <p>While we strive to provide accurate and up-to-date information, the content shared by community members represents individual perspectives and should not be considered official legal, professional, or regulatory guidance.</p>
-              <p>Platform administrators reserve the right to modify terms of service, platform features, and membership criteria with reasonable notice to existing members. Continued use of the platform following such changes constitutes acceptance of the updated terms.</p>
-              <p>If you have questions about these disclosures, please contact platform support before proceeding.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="agreement-checkbox-row">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              checked={{this.agreedToTerms}}
-              {{on "change" (fn (mut this.agreedToTerms) (not this.agreedToTerms))}}
-            />
-            <span class="checkbox-text">I have read and agree to these terms</span>
-          </label>
-        </div>
-      </div>
-    {{/if}}
-
-    {{#if (eq this.currentStep 2)}}
-      <div class="onboarding-step step-2">
-        <h2 class="step-title">About Yourself</h2>
-        <p class="step-description">Help us understand your background so we can connect you with the right community.</p>
-
-        <div class="form-group">
-          <label class="form-label required">Your Role</label>
-          <p class="form-helper">Pick the 1 that best describes you</p>
-          <select
-            class="form-select"
-            value={{this.role}}
-            {{on "change" (fn (mut this.role) (get-event-value))}}
-          >
-            <option value="">Select your role...</option>
-            {{#each this.roleOptions as |opt|}}
-              <option value={{opt}} selected={{eq this.role opt}}>{{opt}}</option>
-            {{/each}}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label required">Groups Served</label>
-          <p class="form-helper">Select all that apply</p>
-          <div class="multi-select-tags">
-            {{#each this.groupOptions as |opt|}}
-              <button
-                type="button"
-                class="tag-btn {{if (includes this.groupsServed opt) "selected"}}"
-                {{on "click" (fn this.toggleGroup opt)}}
-              >
-                {{opt}}
-                {{#if (includes this.groupsServed opt)}}
-                  <span class="tag-remove">×</span>
+            {{#if (eq field.type "acceptance")}}
+              <div class="qfield-acceptance-block">
+                {{#if field.content}}
+                  <div class="qfield-terms-scroll">
+                    <p>{{field.content}}</p>
+                  </div>
                 {{/if}}
-              </button>
-            {{/each}}
-          </div>
-          {{#if (gt this.groupsServed.length 0)}}
-            <p class="selection-count">{{this.groupsServed.length}} selected</p>
-          {{/if}}
-        </div>
+                <label class="qfield-acceptance-row">
+                  <input
+                    type="checkbox"
+                    class="qfield-checkbox"
+                    checked={{get this.fieldValues field.id}}
+                    {{on "change" (fn this.updateField field.id)}}
+                  />
+                  <span class="qfield-acceptance-text">
+                    {{field.label}}
+                    {{#if field.required}}<span class="required-star">*</span>{{/if}}
+                  </span>
+                </label>
+              </div>
+            {{/if}}
 
-        <div class="form-group">
-          <label class="form-label">States Worked In</label>
-          <p class="form-helper">Select all that apply</p>
-          <div class="multi-select-tags states-grid">
-            {{#each this.usStates as |st|}}
-              <button
-                type="button"
-                class="tag-btn small {{if (includes this.statesWorked st) "selected"}}"
-                {{on "click" (fn this.toggleStateWorked st)}}
-              >
-                {{st}}
-              </button>
-            {{/each}}
+            {{#if (eq field.type "checkbox")}}
+              <label class="qfield-checkbox-row">
+                <input
+                  type="checkbox"
+                  class="qfield-checkbox"
+                  checked={{get this.fieldValues field.id}}
+                  {{on "change" (fn this.updateField field.id)}}
+                />
+                <span class="qfield-checkbox-text">
+                  {{#if field.content}}{{field.content}}{{else}}{{field.label}}{{/if}}
+                  {{#if field.required}}<span class="required-star">*</span>{{/if}}
+                </span>
+              </label>
+            {{/if}}
+
           </div>
-          {{#if (gt this.statesWorked.length 0)}}
-            <p class="selection-count">{{this.statesWorked.length}} states selected</p>
-          {{/if}}
-        </div>
+        {{/each}}
       </div>
-    {{/if}}
 
-    {{#if (eq this.currentStep 3)}}
-      <div class="onboarding-step step-3">
-        <h2 class="step-title">Enter Your Details</h2>
-        <p class="step-description">Complete your professional profile.</p>
-
-        <div class="form-section">
-          <h3 class="form-section-title">Personal Information</h3>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label required">First Name</label>
-              <input
-                type="text"
-                class="form-input"
-                value={{this.firstName}}
-                placeholder="Enter first name"
-                {{on "input" (fn (mut this.firstName) (get-event-value))}}
-              />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Last Name</label>
-              <input
-                type="text"
-                class="form-input"
-                value={{this.lastName}}
-                placeholder="Enter last name"
-                {{on "input" (fn (mut this.lastName) (get-event-value))}}
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label required">Pronouns</label>
-            <select
-              class="form-select"
-              value={{this.pronouns}}
-              {{on "change" (fn (mut this.pronouns) (get-event-value))}}
-            >
-              <option value="">Select pronouns...</option>
-              {{#each this.pronounOptions as |opt|}}
-                <option value={{opt}} selected={{eq this.pronouns opt}}>{{opt}}</option>
-              {{/each}}
-            </select>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3 class="form-section-title">Contact Information</h3>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label required">Phone Number</label>
-              <input
-                type="tel"
-                class="form-input"
-                value={{this.phone}}
-                placeholder="(###) ###-####"
-                {{on "input" this.formatPhoneInput}}
-              />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Alternative Phone</label>
-              <input
-                type="tel"
-                class="form-input"
-                value={{this.altPhone}}
-                placeholder="(###) ###-####"
-                {{on "input" this.formatAltPhoneInput}}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3 class="form-section-title">Organization Information</h3>
-
-          <div class="form-group">
-            <label class="form-label required">Organization</label>
-            <input
-              type="text"
-              class="form-input"
-              value={{this.organization}}
-              placeholder="Enter organization name"
-              {{on "input" (fn (mut this.organization) (get-event-value))}}
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label required">Type of Organization</label>
-            <select
-              class="form-select"
-              value={{this.organizationType}}
-              {{on "change" (fn (mut this.organizationType) (get-event-value))}}
-            >
-              <option value="">Select organization type...</option>
-              {{#each this.organizationTypes as |opt|}}
-                <option value={{opt}} selected={{eq this.organizationType opt}}>{{opt}}</option>
-              {{/each}}
-            </select>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3 class="form-section-title">Location</h3>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label required">Country</label>
-              <select
-                class="form-select"
-                value={{this.country}}
-                {{on "change" (fn (mut this.country) (get-event-value))}}
-              >
-                <option value="">Select country...</option>
-                {{#each this.countryOptions as |opt|}}
-                  <option value={{opt}} selected={{eq this.country opt}}>{{opt}}</option>
-                {{/each}}
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label required">State</label>
-              <select
-                class="form-select"
-                value={{this.state}}
-                {{on "change" (fn (mut this.state) (get-event-value))}}
-              >
-                <option value="">Select state...</option>
-                {{#each this.usStates as |st|}}
-                  <option value={{st}} selected={{eq this.state st}}>{{st}}</option>
-                {{/each}}
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">City</label>
-              <input
-                type="text"
-                class="form-input"
-                value={{this.city}}
-                placeholder="Enter city"
-                {{on "input" (fn (mut this.city) (get-event-value))}}
-              />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Zip Code</label>
-              <input
-                type="text"
-                class="form-input"
-                value={{this.zip}}
-                placeholder="Enter zip code"
-                {{on "input" (fn (mut this.zip) (get-event-value))}}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    {{/if}}
-
-    <div class="onboarding-actions">
-      {{#if (gt this.currentStep 1)}}
+      <div class="questionnaire-actions">
         <button
           type="button"
-          class="btn btn-flat onboarding-back-btn"
-          {{on "click" this.prevStep}}
-          disabled={{this.isSubmitting}}
-        >
-          Back
-        </button>
-      {{/if}}
-
-      {{#if this.isLastStep}}
-        <button
-          type="button"
-          class="btn btn-primary onboarding-submit-btn {{unless this.canProceed "disabled"}}"
-          disabled={{or (not this.canProceed) this.isSubmitting}}
+          class="btn btn-primary questionnaire-submit-btn"
+          disabled={{or (not this.canSubmit) this.isSubmitting}}
           {{on "click" this.submitForm}}
         >
           {{#if this.isSubmitting}}
             Submitting...
           {{else}}
-            Complete Sign Up
+            Submit
           {{/if}}
         </button>
-      {{else}}
-        <button
-          type="button"
-          class="btn btn-primary onboarding-next-btn {{unless this.canProceed "disabled"}}"
-          disabled={{or (not this.canProceed) this.isSubmitting}}
-          {{on "click" this.nextStep}}
-        >
-          Continue
-        </button>
-      {{/if}}
-    </div>
+      </div>
+
+    {{else}}
+      <div class="questionnaire-no-content">
+        <p>No questionnaire is currently available. You will be redirected to the home page.</p>
+      </div>
+    {{/if}}
 
   </div>
 </div>

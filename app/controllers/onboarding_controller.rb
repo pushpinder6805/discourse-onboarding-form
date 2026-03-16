@@ -6,38 +6,43 @@ class OnboardingController < ApplicationController
   before_action :ensure_onboarding_enabled
 
   def show
+    questionnaire = QuestionnaireDefinition.active
     submission = OnboardingSubmission.find_by(user_id: current_user.id)
+
     render json: {
       completed: submission&.completed || false,
-      current_step: submission&.current_step || 1,
-      data: submission&.data || {}
+      data: submission&.data || {},
+      questionnaire: questionnaire ? serialize_questionnaire(questionnaire) : nil
     }
   end
 
   def status
+    questionnaire = QuestionnaireDefinition.active
     submission = OnboardingSubmission.find_by(user_id: current_user.id)
     render json: {
       completed: submission&.completed || false,
-      required: !submission&.completed
+      required: questionnaire.present? && !submission&.completed
     }
   end
 
   def submit
-    submission = OnboardingSubmission.for_user(current_user.id)
-    submission.data = (submission.data || {}).merge(submission_params)
-    submission.current_step = params[:current_step].to_i if params[:current_step]
+    questionnaire = QuestionnaireDefinition.active
+    return render json: { errors: ["No active questionnaire found."] }, status: 422 unless questionnaire
 
-    if params[:final_submit]
-      if valid_final_submission?(submission.data)
+    submission = OnboardingSubmission.for_user(current_user.id, questionnaire.id)
+    merged_data = (submission.data || {}).merge(submission_params(questionnaire))
+    submission.data = merged_data
+
+    if params[:final_submit].to_s == "true"
+      if valid_submission?(merged_data, questionnaire)
         submission.completed = true
-        sync_user_fields(submission.data)
       else
         return render json: { errors: ["Please complete all required fields."] }, status: 422
       end
     end
 
     if submission.save
-      render json: { success: true, completed: submission.completed, current_step: submission.current_step }
+      render json: { success: true, completed: submission.completed }
     else
       render json: { errors: submission.errors.full_messages }, status: 422
     end
@@ -49,48 +54,44 @@ class OnboardingController < ApplicationController
     raise Discourse::NotFound unless SiteSetting.onboarding_enabled
   end
 
-  def submission_params
-    permitted = params.permit(
-      :role,
-      :first_name,
-      :last_name,
-      :pronouns,
-      :phone,
-      :alt_phone,
-      :organization,
-      :organization_type,
-      :country,
-      :state,
-      :city,
-      :zip,
-      :agreed_to_terms,
-      groups_served: [],
-      states_worked: []
-    )
-    permitted.to_h
-  end
+  def submission_params(questionnaire)
+    result = {}
+    questionnaire.fields_list.each do |field|
+      key = field["id"]
+      next unless key.present?
 
-  def valid_final_submission?(data)
-    required_fields = %w[
-      role first_name pronouns phone organization organization_type country state agreed_to_terms
-    ]
-    required_fields.all? { |f| data[f].present? } &&
-      data["groups_served"].is_a?(Array) && data["groups_served"].any?
-  end
-
-  def sync_user_fields(data)
-    return unless current_user
-
-    user_profile = current_user.user_profile
-    return unless user_profile
-
-    user_profile.location = [data["city"], data["state"], data["country"]].compact.join(", ") if data["city"] || data["state"]
-    user_profile.save
-
-    if current_user.respond_to?(:custom_fields)
-      current_user.custom_fields["onboarding_role"] = data["role"] if data["role"]
-      current_user.custom_fields["onboarding_organization"] = data["organization"] if data["organization"]
-      current_user.save_custom_fields
+      if field["type"] == "checkbox" || field["type"] == "acceptance" || field["type"] == "terms_and_conditions"
+        result[key] = params[key].to_s == "true" || params[key] == "1"
+      else
+        result[key] = params[key] if params.key?(key)
+      end
     end
+    result
+  end
+
+  def valid_submission?(data, questionnaire)
+    questionnaire.fields_list.each do |field|
+      next unless field["required"]
+
+      key = field["id"]
+      value = data[key]
+
+      case field["type"]
+      when "checkbox", "acceptance", "terms_and_conditions"
+        return false unless value == true
+      else
+        return false if value.blank?
+      end
+    end
+    true
+  end
+
+  def serialize_questionnaire(q)
+    {
+      id: q.id,
+      name: q.name,
+      description: q.description,
+      fields: q.fields_list
+    }
   end
 end

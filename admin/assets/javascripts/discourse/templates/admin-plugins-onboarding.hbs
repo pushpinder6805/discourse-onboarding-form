@@ -1,119 +1,394 @@
 <div class="admin-onboarding-panel">
   <div class="admin-onboarding-header">
     <div class="admin-onboarding-header-left">
-      <h1 class="admin-onboarding-title">Onboarding Submissions</h1>
-      <span class="admin-onboarding-count">{{this.total}} total</span>
-    </div>
-    <div class="admin-onboarding-header-actions">
-      <button
-        type="button"
-        class="btn btn-default"
-        {{on "click" this.exportCSV}}
-      >
-        Export CSV
-      </button>
+      <h1 class="admin-onboarding-title">Questionnaire Builder</h1>
+      <p class="admin-onboarding-subtitle">Create and manage onboarding questionnaires for new users</p>
     </div>
   </div>
 
-  <div class="admin-onboarding-toolbar">
-    <div class="admin-search-row">
-      <input
-        type="text"
-        class="admin-search-input"
-        value={{this.search}}
-        placeholder="Search by username or email..."
-        {{on "input" this.updateSearch}}
-        {{on "keydown" (fn this.performSearch)}}
-      />
-      <button
-        type="button"
-        class="btn btn-primary"
-        {{on "click" this.performSearch}}
-      >
-        Search
-      </button>
-    </div>
+  <div class="admin-onboarding-tabs">
+    <button
+      type="button"
+      class="tab-btn {{if (eq this.activeTab "builder") "active"}}"
+      {{on "click" (fn this.switchTab "builder")}}
+    >
+      Questionnaires
+    </button>
+    <button
+      type="button"
+      class="tab-btn {{if (eq this.activeTab "submissions") "active"}}"
+      {{on "click" (fn this.switchTab "submissions")}}
+    >
+      Submissions
+    </button>
   </div>
 
-  {{#if this.isLoading}}
-    <div class="admin-onboarding-loading">
-      <div class="loading-spinner"></div>
-      <p>Loading submissions...</p>
-    </div>
-  {{else if (eq this.submissions.length 0)}}
-    <div class="admin-onboarding-empty">
-      <p>No submissions found.</p>
-    </div>
-  {{else}}
-    <div class="admin-submissions-table-wrap">
-      <table class="admin-submissions-table">
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Organization</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each this.submissions as |sub|}}
-            <tr class="submission-row {{unless sub.completed "incomplete"}}">
-              <td class="user-cell">
-                {{#if sub.avatar_template}}
-                  <img
-                    src={{replace-emoji sub.avatar_template}}
-                    class="avatar avatar-small"
-                    alt={{sub.username}}
-                  />
-                {{/if}}
-                <span class="username">{{sub.username}}</span>
-              </td>
-              <td class="email-cell">{{sub.email}}</td>
-              <td>{{sub.data.role}}</td>
-              <td>{{sub.data.organization}}</td>
-              <td>
-                <span class="status-badge {{if sub.completed "completed" "pending"}}">
-                  {{if sub.completed "Completed" "In Progress"}}
-                </span>
-              </td>
-              <td class="date-cell">{{format-date sub.created_at}}</td>
-              <td class="actions-cell">
-                <button
-                  type="button"
-                  class="btn btn-small btn-default"
-                  {{on "click" (fn this.viewSubmission sub.id)}}
-                >
-                  View
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-small btn-danger"
-                  {{on "click" (fn this.deleteSubmission sub.id)}}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          {{/each}}
-        </tbody>
-      </table>
-    </div>
+  {{#if (eq this.activeTab "builder")}}
+    {{#if this.editingQuestionnaire}}
+      <div class="questionnaire-editor">
+        <div class="editor-header">
+          <h2 class="editor-title">
+            {{#if this.editingQuestionnaire.id}}Edit Questionnaire{{else}}New Questionnaire{{/if}}
+          </h2>
+          <div class="editor-header-actions">
+            <button type="button" class="btn btn-flat" {{on "click" this.cancelEdit}}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              disabled={{this.isSaving}}
+              {{on "click" this.saveQuestionnaire}}
+            >
+              {{#if this.isSaving}}Saving...{{else}}Save Questionnaire{{/if}}
+            </button>
+          </div>
+        </div>
 
-    {{#if this.hasMore}}
-      <div class="admin-load-more">
-        <button
-          type="button"
-          class="btn btn-default"
-          disabled={{this.isLoading}}
-          {{on "click" this.loadMore}}
-        >
-          Load More
-        </button>
+        <div class="editor-meta-section">
+          <div class="form-group">
+            <label class="form-label required">Questionnaire Name</label>
+            <input
+              type="text"
+              class="form-input"
+              value={{this.editingQuestionnaire.name}}
+              placeholder="e.g. New Member Onboarding"
+              {{on "input" this.updateQuestionnaireName}}
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea
+              class="form-textarea"
+              value={{this.editingQuestionnaire.description}}
+              placeholder="Optional description shown to users"
+              {{on "input" this.updateQuestionnaireDescription}}
+            ></textarea>
+          </div>
+          <div class="form-toggles">
+            <label class="toggle-label">
+              <input
+                type="checkbox"
+                checked={{this.editingQuestionnaire.enabled}}
+                {{on "change" this.toggleEnabled}}
+              />
+              <span>Enabled</span>
+            </label>
+            <label class="toggle-label">
+              <input
+                type="checkbox"
+                checked={{this.editingQuestionnaire.require_after_signup}}
+                {{on "change" this.toggleRequireAfterSignup}}
+              />
+              <span>Require after signup (redirect new users to /questionnaire)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="editor-fields-section">
+          <div class="fields-header">
+            <h3 class="fields-title">Questions / Fields</h3>
+            <button type="button" class="btn btn-default add-field-btn" {{on "click" this.addField}}>
+              + Add Field
+            </button>
+          </div>
+
+          {{#if (eq this.editingQuestionnaire.fields.length 0)}}
+            <div class="fields-empty">
+              <p>No fields yet. Click "Add Field" to start building your questionnaire.</p>
+            </div>
+          {{else}}
+            <div class="fields-list">
+              {{#each this.editingQuestionnaire.fields as |field index|}}
+                <div class="field-card">
+                  <div class="field-card-header">
+                    <div class="field-card-drag">
+                      <button
+                        type="button"
+                        class="field-order-btn"
+                        disabled={{eq index 0}}
+                        {{on "click" (fn this.moveFieldUp index)}}
+                        title="Move up"
+                      >↑</button>
+                      <button
+                        type="button"
+                        class="field-order-btn"
+                        disabled={{eq index (sub this.editingQuestionnaire.fields.length 1)}}
+                        {{on "click" (fn this.moveFieldDown index)}}
+                        title="Move down"
+                      >↓</button>
+                    </div>
+                    <span class="field-type-badge">{{field.type}}</span>
+                    <button
+                      type="button"
+                      class="field-remove-btn"
+                      {{on "click" (fn this.removeField index)}}
+                      title="Remove field"
+                    >×</button>
+                  </div>
+
+                  <div class="field-card-body">
+                    <div class="field-row">
+                      <div class="form-group">
+                        <label class="form-label">Field Type</label>
+                        <select
+                          class="form-select"
+                          {{on "change" (fn this.updateField index "type")}}
+                        >
+                          {{#each this.fieldTypes as |ft|}}
+                            <option value={{ft.value}} selected={{eq field.type ft.value}}>
+                              {{ft.label}}
+                            </option>
+                          {{/each}}
+                        </select>
+                      </div>
+                      <div class="form-group flex-grow">
+                        <label class="form-label required">Label / Question</label>
+                        <input
+                          type="text"
+                          class="form-input"
+                          value={{field.label}}
+                          placeholder="Enter question label..."
+                          {{on "input" (fn this.updateField index "label")}}
+                        />
+                      </div>
+                    </div>
+
+                    {{#if (or (eq field.type "text") (eq field.type "phone") (eq field.type "number"))}}
+                      <div class="form-group">
+                        <label class="form-label">Placeholder Text</label>
+                        <input
+                          type="text"
+                          class="form-input"
+                          value={{field.placeholder}}
+                          placeholder="Optional placeholder..."
+                          {{on "input" (fn this.updateField index "placeholder")}}
+                        />
+                      </div>
+                    {{/if}}
+
+                    {{#if (eq field.type "textarea")}}
+                      <div class="form-group">
+                        <label class="form-label">Placeholder Text</label>
+                        <input
+                          type="text"
+                          class="form-input"
+                          value={{field.placeholder}}
+                          placeholder="Optional placeholder..."
+                          {{on "input" (fn this.updateField index "placeholder")}}
+                        />
+                      </div>
+                    {{/if}}
+
+                    {{#if (or (eq field.type "terms_and_conditions") (eq field.type "acceptance"))}}
+                      <div class="form-group">
+                        <label class="form-label">Content / Terms Text</label>
+                        <textarea
+                          class="form-textarea tall"
+                          value={{field.content}}
+                          placeholder="Paste your terms and conditions text here..."
+                          {{on "input" (fn this.updateField index "content")}}
+                        ></textarea>
+                        <p class="form-hint">This text will appear in a scrollable box. Users must scroll and tick to accept.</p>
+                      </div>
+                    {{/if}}
+
+                    {{#if (eq field.type "checkbox")}}
+                      <div class="form-group">
+                        <label class="form-label">Checkbox Text</label>
+                        <input
+                          type="text"
+                          class="form-input"
+                          value={{field.content}}
+                          placeholder="e.g. I agree to the above"
+                          {{on "input" (fn this.updateField index "content")}}
+                        />
+                      </div>
+                    {{/if}}
+
+                    <div class="field-options-row">
+                      <label class="toggle-label">
+                        <input
+                          type="checkbox"
+                          checked={{field.required}}
+                          {{on "change" (fn this.updateField index "required")}}
+                        />
+                        <span>Required</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          {{/if}}
+
+          <div class="fields-footer">
+            <button type="button" class="btn btn-default add-field-btn" {{on "click" this.addField}}>
+              + Add Another Field
+            </button>
+          </div>
+        </div>
+      </div>
+
+    {{else}}
+      <div class="questionnaires-list-view">
+        <div class="questionnaires-toolbar">
+          <button type="button" class="btn btn-primary" {{on "click" this.newQuestionnaire}}>
+            + New Questionnaire
+          </button>
+        </div>
+
+        {{#if this.hasQuestionnaires}}
+          <div class="questionnaires-grid">
+            {{#each this.questionnaires as |q|}}
+              <div class="questionnaire-card {{unless q.enabled "disabled"}}">
+                <div class="questionnaire-card-header">
+                  <div class="questionnaire-card-info">
+                    <h3 class="questionnaire-card-name">{{q.name}}</h3>
+                    {{#if q.description}}
+                      <p class="questionnaire-card-desc">{{q.description}}</p>
+                    {{/if}}
+                  </div>
+                  <div class="questionnaire-card-badges">
+                    <span class="status-badge {{if q.enabled "active" "inactive"}}">
+                      {{if q.enabled "Active" "Inactive"}}
+                    </span>
+                    {{#if q.require_after_signup}}
+                      <span class="status-badge required">Required</span>
+                    {{/if}}
+                  </div>
+                </div>
+                <div class="questionnaire-card-meta">
+                  <span class="meta-item">{{q.fields.length}} fields</span>
+                  <span class="meta-item">{{q.submission_count}} submissions</span>
+                </div>
+                <div class="questionnaire-card-actions">
+                  <button
+                    type="button"
+                    class="btn btn-small btn-default"
+                    {{on "click" (fn this.editQuestionnaire q)}}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-small btn-danger"
+                    {{on "click" (fn this.deleteQuestionnaire q.id)}}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="questionnaires-empty">
+            <div class="empty-icon">📋</div>
+            <h3>No questionnaires yet</h3>
+            <p>Create your first questionnaire to collect information from new members after they sign up.</p>
+            <button type="button" class="btn btn-primary" {{on "click" this.newQuestionnaire}}>
+              Create Your First Questionnaire
+            </button>
+          </div>
+        {{/if}}
       </div>
     {{/if}}
+
+  {{else}}
+    <div class="submissions-panel">
+      <div class="submissions-toolbar">
+        <div class="search-row">
+          <input
+            type="text"
+            class="admin-search-input"
+            value={{this.submissionsSearch}}
+            placeholder="Search by username or email..."
+            {{on "input" this.updateSubmissionsSearch}}
+          />
+          <button type="button" class="btn btn-default" {{on "click" this.searchSubmissions}}>
+            Search
+          </button>
+        </div>
+        <button type="button" class="btn btn-default export-btn" {{on "click" this.exportCSV}}>
+          Export CSV
+        </button>
+      </div>
+
+      {{#if this.isLoadingSubmissions}}
+        <div class="submissions-loading">
+          <div class="loading-spinner"></div>
+          <p>Loading submissions...</p>
+        </div>
+      {{else if (eq this.submissions.length 0)}}
+        <div class="submissions-empty">
+          <p>No submissions found.</p>
+        </div>
+      {{else}}
+        <div class="submissions-count">
+          Showing {{this.submissions.length}} of {{this.submissionsTotal}}
+        </div>
+        <div class="submissions-table-wrap">
+          <table class="submissions-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Questionnaire</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each this.submissions as |sub|}}
+                <tr class="submission-row {{unless sub.completed "incomplete"}}">
+                  <td class="user-cell">
+                    <span class="username">{{sub.username}}</span>
+                  </td>
+                  <td>{{sub.email}}</td>
+                  <td>{{sub.questionnaire_name}}</td>
+                  <td>
+                    <span class="status-badge {{if sub.completed "completed" "pending"}}">
+                      {{if sub.completed "Completed" "In Progress"}}
+                    </span>
+                  </td>
+                  <td class="date-cell">{{format-date sub.created_at}}</td>
+                  <td class="actions-cell">
+                    <button
+                      type="button"
+                      class="btn btn-small btn-default"
+                      {{on "click" (fn this.viewSubmission sub.id)}}
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-small btn-danger"
+                      {{on "click" (fn this.deleteSubmission sub.id)}}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+
+        {{#if this.hasMoreSubmissions}}
+          <div class="load-more-row">
+            <button
+              type="button"
+              class="btn btn-default"
+              disabled={{this.isLoadingSubmissions}}
+              {{on "click" this.loadMoreSubmissions}}
+            >
+              Load More
+            </button>
+          </div>
+        {{/if}}
+      {{/if}}
+    </div>
   {{/if}}
 
   {{#if this.selectedSubmission}}
@@ -121,109 +396,31 @@
       <div class="submission-detail-modal">
         <div class="submission-detail-header">
           <h2>Submission Detail</h2>
-          <button
-            type="button"
-            class="close-btn"
-            {{on "click" this.closeDetail}}
-          >×</button>
+          <button type="button" class="close-btn" {{on "click" this.closeSubmissionDetail}}>×</button>
         </div>
         <div class="submission-detail-body">
-          <div class="detail-user-info">
-            <strong>Username:</strong> {{this.selectedSubmission.username}}<br/>
-            <strong>Email:</strong> {{this.selectedSubmission.email}}<br/>
+          <div class="detail-meta">
+            <strong>User:</strong> {{this.selectedSubmission.username}}<br />
+            <strong>Email:</strong> {{this.selectedSubmission.email}}<br />
+            <strong>Questionnaire:</strong> {{this.selectedSubmission.questionnaire_name}}<br />
             <strong>Status:</strong>
             <span class="status-badge {{if this.selectedSubmission.completed "completed" "pending"}}">
               {{if this.selectedSubmission.completed "Completed" "In Progress"}}
             </span>
           </div>
 
-          <div class="detail-section">
-            <h3>About</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Role</span>
-                <span class="detail-value">{{this.selectedSubmission.data.role}}</span>
+          <div class="detail-answers">
+            <h3>Answers</h3>
+            {{#each this.selectedSubmission.questionnaire_fields as |field|}}
+              <div class="detail-answer-item">
+                <span class="detail-answer-label">{{field.label}}</span>
+                <span class="detail-answer-value">
+                  {{get this.selectedSubmission.data field.id}}
+                </span>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">Groups Served</span>
-                <span class="detail-value">{{join this.selectedSubmission.data.groups_served ", "}}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">States Worked</span>
-                <span class="detail-value">{{join this.selectedSubmission.data.states_worked ", "}}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <h3>Personal</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">First Name</span>
-                <span class="detail-value">{{this.selectedSubmission.data.first_name}}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Last Name</span>
-                <span class="detail-value">{{this.selectedSubmission.data.last_name}}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Pronouns</span>
-                <span class="detail-value">{{this.selectedSubmission.data.pronouns}}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <h3>Contact</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Phone</span>
-                <span class="detail-value">{{this.selectedSubmission.data.phone}}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Alt Phone</span>
-                <span class="detail-value">{{this.selectedSubmission.data.alt_phone}}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <h3>Organization</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Organization</span>
-                <span class="detail-value">{{this.selectedSubmission.data.organization}}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Type</span>
-                <span class="detail-value">{{this.selectedSubmission.data.organization_type}}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <h3>Location</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Country</span>
-                <span class="detail-value">{{this.selectedSubmission.data.country}}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">State</span>
-                <span class="detail-value">{{this.selectedSubmission.data.state}}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">City</span>
-                <span class="detail-value">{{this.selectedSubmission.data.city}}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Zip</span>
-                <span class="detail-value">{{this.selectedSubmission.data.zip}}</span>
-              </div>
-            </div>
+            {{/each}}
           </div>
         </div>
-
         <div class="submission-detail-footer">
           <button
             type="button"
@@ -232,11 +429,7 @@
           >
             Delete Submission
           </button>
-          <button
-            type="button"
-            class="btn btn-default"
-            {{on "click" this.closeDetail}}
-          >
+          <button type="button" class="btn btn-default" {{on "click" this.closeSubmissionDetail}}>
             Close
           </button>
         </div>
