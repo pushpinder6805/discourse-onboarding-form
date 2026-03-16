@@ -7,8 +7,6 @@
 
 enabled_site_setting :onboarding_enabled
 
-register_admin_route "Onboarding", "onboarding"
-
 after_initialize do
   module ::DiscourseOnboarding
     PLUGIN_NAME = "discourse-onboarding-form"
